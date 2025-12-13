@@ -1,0 +1,66 @@
+# -------------------------------
+# 🚢 Dockerignore for Node.js App
+# -------------------------------
+
+# Node.js dependencies (we'll re-install cleanly in container)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv files (secrets should come from Docker env vars or secrets manager)
+.env
+.env.*
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Test coverage and outputs
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+
+# Local build output (always rebuild inside container)
+dist/
+build/
+tmp/
+temp/
+
+# Git metadata (not needed in image)
+.git/
+.gitignore
+
+# Dockerignore itself
+.dockerignore
+
+# Optional: Ignore Markdown docs unless you need them in the image
+*.md
+docs/
+example/
+examples/
+
+# Optional: ESlint cache
+.eslintcache
+
+# Optional: If you have custom editor swap files
+*.swp
+*.swo
+*.bak
+*.orig
