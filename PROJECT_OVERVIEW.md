@@ -202,7 +202,7 @@ DEBUG=express-mssql-pooling:* node src/server.js
 **Production**:
 ```bash
 npm start
-# Starts server on port 3000 with production logging
+# Starts server on port 1533 with production logging
 ```
 
 **Development**:

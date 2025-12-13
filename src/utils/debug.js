@@ -25,6 +25,8 @@ const createDebugger = (namespace) => debugLib(namespace);
 const debugServer = createDebugger(`${MODULE_NAME}:server`);
 const debugApplication = createDebugger(`${MODULE_NAME}:application`);
 const debugRoutes = createDebugger(`${MODULE_NAME}:route`);
+const debugMSSQL = createDebugger(`${MODULE_NAME}:mssql`);
 
-export { debugServer, debugApplication, debugRoutes };
+
+export { debugServer, debugApplication, debugRoutes, debugMSSQL };
 export default createDebugger;

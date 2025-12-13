@@ -85,10 +85,10 @@ app.use(
 app.use("/js", express.static(path.join(__dirname, "../node_modules/dayjs")));
 
 import indexRouter from "./routes/indexRouter.js";
-
+import apiRouter from "./routes/apiRouter.js";
 app.use("/", indexRouter);
 app.use("/ajax", (req, res, next) => res.json("AJAX"));
-app.use("/api", (req, res, next) => res.json("API"));
+app.use("/api", apiRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
