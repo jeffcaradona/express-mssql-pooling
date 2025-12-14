@@ -224,7 +224,7 @@ export const initializeDatabase = async () => {
 
 /**
  * Gracefully close the connection pool, allowing active queries to complete
- * @param {number} drainTimeout - Maximum time (ms) to wait for active queries
+ * @param {number} drainTimeout - Maximum time (ms) to wait for pool to close
  */
 export const gracefulShutdown = async (drainTimeout = 30000) => {
   if (isShuttingDown) {
@@ -234,25 +234,20 @@ export const gracefulShutdown = async (drainTimeout = 30000) => {
   isShuttingDown = true;
   try {
     if (pool) {
-      debugMSSQL("Starting graceful shutdown, waiting for active queries...");
+      debugMSSQL("Starting graceful shutdown of database pool...");
       
-      // Get pool statistics if available
-      const poolSize = pool.size || 0;
-      const activeConnections = pool.connected || 0;
-      debugMSSQL(`Pool status: ${poolSize} total, ${activeConnections} active`);
+      // Use a timeout race to enforce maximum drain time
+      const closePromise = pool.close();
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          debugMSSQL(`Warning: Shutdown taking longer than ${drainTimeout}ms`);
+          resolve();
+        }, drainTimeout);
+      });
       
-      // Wait for active queries with timeout
-      const startTime = Date.now();
-      while (pool.connected > 0 && (Date.now() - startTime) < drainTimeout) {
-        debugMSSQL(`Waiting for ${pool.connected} active connections...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      // Race: whichever completes first
+      await Promise.race([closePromise, timeoutPromise]);
       
-      if (pool.connected > 0) {
-        debugMSSQL(`Warning: ${pool.connected} queries still active after ${drainTimeout}ms drain period`);
-      }
-      
-      await pool.close();
       pool = null;
       debugMSSQL("Graceful shutdown completed");
     }

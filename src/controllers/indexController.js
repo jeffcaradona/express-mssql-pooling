@@ -1,4 +1,4 @@
-let controller = {};
+const controller = {};
 
 controller.index = (req, res, next) => {
   try {

@@ -16,7 +16,9 @@
   },
   "scripts": {
     "start": "node ./src/server.js",
-    "start:dev": "cross-env  NODE_ENV=development DEBUG=express-mssql-pooling:* nodemon ./src/server.js"
+    "start:dev": "cross-env  NODE_ENV=development DEBUG=express-mssql-pooling:* nodemon ./src/server.js",
+    "start:inspect": "node --inspect ./src/server.js",
+    "start:dev:inspect": "cross-env NODE_ENV=development DEBUG=express-mssql-pooling:* nodemon --exec node --inspect ./src/server.js"
   },
   "dependencies": {
     "axios": "^1.13.2",
