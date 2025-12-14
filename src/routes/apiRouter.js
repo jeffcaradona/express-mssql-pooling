@@ -13,4 +13,8 @@ apiRouter.get("/record-count", getRecordCount);
 import { getBadTest } from "../controllers/apiController.js";
 apiRouter.get("/failure-test", getBadTest);
 
+
+
+
+
 export default apiRouter;

@@ -90,6 +90,16 @@ app.use("/", indexRouter);
 app.use("/ajax", (req, res, next) => res.json("AJAX"));
 app.use("/api", apiRouter);
 
+// Add to your load test or create a monitoring endpoint
+app.get('/health/threads', (req, res) => {
+    const resources = process.getActiveResourcesInfo();
+    res.json({
+        activeResources: resources,
+        threadPoolSize: process.env.UV_THREADPOOL_SIZE || 4
+    });
+});
+
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

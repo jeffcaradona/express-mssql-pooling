@@ -1,4 +1,4 @@
-import mssql from 'mssql';
+
 import { initial_test, testBadRecord, getConnectionPool, executeQuery } from "../services/database.js";
 import { debugApplication } from '../utils/debug.js';
 
