@@ -40,6 +40,10 @@ const getDbConfig = () => {
 };
 
 export const getConnectionPool = async () => {
+  if (isShuttingDown) {
+    throw new Error("Cannot get connection pool during shutdown");
+  }
+
   if (!poolConnect) {
     // Only start connection once, even if called multiple times
     poolConnect = (async () => {

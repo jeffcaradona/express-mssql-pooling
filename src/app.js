@@ -90,6 +90,7 @@ app.use("/", indexRouter);
 app.use("/ajax", (req, res, next) => res.json("AJAX"));
 app.use("/api", apiRouter);
 
+// TODO: Separate monitoring endpoints into their own router
 // Add to your load test or create a monitoring endpoint
 app.get('/health/threads', (req, res) => {
     const resources = process.getActiveResourcesInfo();
