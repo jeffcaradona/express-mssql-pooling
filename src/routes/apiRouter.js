@@ -5,7 +5,12 @@ apiRouter.get("/", (req, res) => {
   res.json({ message: "Welcome to the API root!" });
 });
 
-import { getInitialTest } from "../controllers/apiController.js";
+import { getInitialTest, getRecordCount } from "../controllers/apiController.js";
 apiRouter.get("/initial-test", getInitialTest);
+apiRouter.get("/record-count", getRecordCount);
+
+
+import { getBadTest } from "../controllers/apiController.js";
+apiRouter.get("/failure-test", getBadTest);
 
 export default apiRouter;

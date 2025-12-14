@@ -8,6 +8,9 @@ import { debugServer } from '../src/utils/debug.js';
 import http from 'http'
 import { configDotenv } from 'dotenv';
 configDotenv();
+
+import { initializeDatabase } from './services/database.js';
+
 /**
  * Get port from environment and store in Express.
  */
@@ -29,6 +32,17 @@ const server = http.createServer(app);
  */
 
 server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+// Initialize database after server is created but before it listens
+(async () => {
+  try {
+    await initializeDatabase();
+  } catch (err) {
+    debugServer('Failed to initialize database, server still starting: %O', { message: err.message });
+  }
+})();
 server.on('error', onError);
 server.on('listening', onListening);
 
