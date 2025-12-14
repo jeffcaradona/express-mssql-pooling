@@ -1,6 +1,7 @@
 import mssql from "mssql";
 import { debugMSSQL } from "../utils/debug.js";
 
+let isShuttingDown = false;
 let pool = null;
 let poolConnect = null;
 
@@ -183,7 +184,6 @@ export const initial_test = async (recQy = 1) => {
 
 
 
-
 export const testBadRecord = async () => {
  try {
     debugMSSQL("Database failure test starting");
@@ -215,5 +215,46 @@ export const initializeDatabase = async () => {
       code: err.code,
     });
     throw err; // Rethrow so caller knows initialization failed
+  }
+};
+
+/**
+ * Gracefully close the connection pool, allowing active queries to complete
+ * @param {number} drainTimeout - Maximum time (ms) to wait for active queries
+ */
+export const gracefulShutdown = async (drainTimeout = 30000) => {
+  if (isShuttingDown) {
+    debugMSSQL("Graceful shutdown already in progress, skipping duplicate call");
+    return;
+  }
+  isShuttingDown = true;
+  try {
+    if (pool) {
+      debugMSSQL("Starting graceful shutdown, waiting for active queries...");
+      
+      // Get pool statistics if available
+      const poolSize = pool.size || 0;
+      const activeConnections = pool.connected || 0;
+      debugMSSQL(`Pool status: ${poolSize} total, ${activeConnections} active`);
+      
+      // Wait for active queries with timeout
+      const startTime = Date.now();
+      while (pool.connected > 0 && (Date.now() - startTime) < drainTimeout) {
+        debugMSSQL(`Waiting for ${pool.connected} active connections...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      if (pool.connected > 0) {
+        debugMSSQL(`Warning: ${pool.connected} queries still active after ${drainTimeout}ms drain period`);
+      }
+      
+      await pool.close();
+      pool = null;
+      debugMSSQL("Graceful shutdown completed");
+    }
+  } catch (err) {
+    debugMSSQL("Error during graceful shutdown: %O", { message: err.message });
+  } finally {
+    poolConnect = null;
   }
 };

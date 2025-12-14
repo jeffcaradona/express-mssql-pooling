@@ -9,7 +9,7 @@ import http from 'http'
 import { configDotenv } from 'dotenv';
 configDotenv();
 
-import { initializeDatabase, closeConnectionPool } from './services/database.js';
+import { initializeDatabase, gracefulShutdown as gracefulDatabaseShutdown } from './services/database.js';
 
 /**
  * Get port from environment and store in Express.
@@ -108,16 +108,25 @@ function onListening() {
   debugServer(`Server is running at ${url}`);
 }
 
+let shuttingDownServer = false; 
 // Graceful shutdown helper
 const gracefulShutdown = async (signal) => {
+  if (shuttingDownServer) {
+    debugServer(`Shutdown already in progress, ignoring additional ${signal} signal`);
+    return;
+  }
+  shuttingDownServer = true;
+
   debugServer(`Received ${signal}. Shutting down gracefully...`);
   
   // Stop accepting new connections
+  debugServer('Stopping HTTP server from accepting new connections...');
   server.close(async () => {
-    debugServer('HTTP server closed, cleaning up database connections...');
+    debugServer('HTTP server closed (all connections finished), waiting for active queries to complete...');
     
     try {
-      await closeConnectionPool();
+      // Give active database queries time to complete (30 seconds drain)
+      await gracefulDatabaseShutdown(30000);
       debugServer('Database connections closed successfully.');
       process.exit(0);
     } catch (err) {
@@ -126,11 +135,11 @@ const gracefulShutdown = async (signal) => {
     }
   });
 
-  // Force shutdown after timeout
+  // Force shutdown after timeout (40 seconds total: 30s drain + 10s buffer)
   setTimeout(() => {
     debugServer('Could not close connections in time, forcefully shutting down');
     process.exit(1);
-  }, 10000);
+  }, 40000);
 };
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
