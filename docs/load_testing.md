@@ -24,7 +24,7 @@ node .\scripts\load-test.js
 
 **Test Configuration**:
 - **Connections**: 20 concurrent users
-- **Duration**: 60 seconds
+- **Duration**: 30 seconds
 - **Target Endpoint**: `/api/record-count`
 - **Method**: GET
 - **Server**: http://localhost:1533
