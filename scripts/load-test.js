@@ -1,5 +1,24 @@
+/**
+ * Load Testing Script
+ * Tests application performance under concurrent load using autocannon
+ * 
+ * Usage: node scripts/load-test.js
+ * 
+ * Configuration:
+ * - Target: http://localhost:1533/api/record-count
+ * - Connections: 20 concurrent users
+ * - Duration: 30 seconds
+ * 
+ * Prerequisites:
+ * - Application must be running (npm run start:dev)
+ * - Database must be initialized
+ */
 import autocannon from 'autocannon';
 
+/**
+ * Execute load test against the record-count endpoint
+ * @returns {Promise<void>}
+ */
 const runLoadTest = async () => {
   try {
     const result = await autocannon({

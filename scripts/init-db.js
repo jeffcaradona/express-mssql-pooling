@@ -1,3 +1,13 @@
+/**
+ * Database Initialization Script
+ * Creates the DemoApp database and TestRecords table with sample data
+ * 
+ * Usage: node scripts/init-db.js
+ * 
+ * Prerequisites:
+ * - SQL Server must be running
+ * - .env file must be configured with database credentials
+ */
 import mssql from 'mssql';
 import { config as configDotenv } from 'dotenv';
 
@@ -15,6 +25,11 @@ const dbConfig = {
     }
 };
 
+/**
+ * Database initialization function
+ * Creates DemoApp database and TestRecords table, then inserts sample data
+ * @returns {Promise<void>}
+ */
 async function initializeDatabase() {
     let pool;
     try {
