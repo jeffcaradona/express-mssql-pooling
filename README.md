@@ -26,10 +26,27 @@ npm run start:dev
 Invoke-WebRequest http://localhost:1533/api/initial-test
 ```
 
+## 📡 API Endpoints
+
+The application provides several REST API endpoints:
+
+- `GET /api/initial-test` - Test database connectivity
+- `GET /api/record-count` - Get total record count
+- `GET /api/test-stream` - Stream large datasets
+- `GET /api/failure-test` - Test error handling
+- `GET /api/test-db-error` - Test database error middleware
+
+See [docs/api_endpoints.md](docs/api_endpoints.md) for complete API documentation with examples.
+
 ## 📚 Full Documentation
 
 ### Core Documentation
 - [SETUP_GUIDE.md](SETUP_GUIDE.md) - Complete setup and configuration guide
+- [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) - Detailed architecture and design decisions
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Guidelines for contributing to the project
+
+### Technical Documentation
+- [api_endpoints.md](docs/api_endpoints.md) - Complete API endpoint reference
 - [executequery_pattern.md](docs/executequery_pattern.md) - Query wrapper pattern and best practices
 - [load_testing.md](docs/load_testing.md) - Performance testing and pool tuning guide
 - [debug_and_logging.md](docs/debug_and_logging.md) - Debugging and logging configuration

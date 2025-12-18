@@ -1,3 +1,9 @@
+/**
+ * API Router
+ * Defines all API endpoints under /api path
+ * 
+ * @module routes/apiRouter
+ */
 import { Router } from "express";
 const apiRouter = Router();
 

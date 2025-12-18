@@ -1,3 +1,9 @@
+/**
+ * Index Router
+ * Handles the main website routes (non-API)
+ * 
+ * @module routes/indexRouter
+ */
 import express from 'express';
 const router = express.Router();
 

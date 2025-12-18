@@ -1,4 +1,18 @@
-// src/utils/logger.js
+/**
+ * Winston logger configuration module
+ * Provides centralized logging for the application
+ * 
+ * Development: Colorized console output with debug level
+ * Production: JSON formatted logs to console and file with info level
+ * 
+ * @module utils/logger
+ * @example
+ * import logger from './utils/logger.js';
+ * 
+ * logger.info('Server started');
+ * logger.error('Database connection failed', { error: err });
+ * logger.debug('Processing request', { userId: 123 });
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import winston from 'winston';

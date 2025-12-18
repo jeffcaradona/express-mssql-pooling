@@ -1,8 +1,14 @@
-
 import { initial_test, testBadRecord, getConnectionPool, executeQuery } from "../services/database.js";
 import { debugApplication } from '../utils/debug.js';
 import { DatabaseError } from '../utils/errorHandler.js';
 
+/**
+ * Handle GET /api/initial-test endpoint
+ * Retrieves test records from the database
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export const getInitialTest = async (req, res, next) => {
     try {
         debugApplication("Fetching records with REC_QY = 1");
@@ -20,6 +26,13 @@ export const getInitialTest = async (req, res, next) => {
     }
 };
 
+/**
+ * Handle GET /api/failure-test endpoint
+ * Tests database error handling by intentionally triggering a validation error
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export const getBadTest = async (req, res, next) => {
     try {
         debugApplication("Starting bad record test");   
@@ -38,6 +51,13 @@ export const getBadTest = async (req, res, next) => {
     }
 };
 
+/**
+ * Handle GET /api/record-count endpoint
+ * Returns the total count of records in the TestRecords table
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export const getRecordCount = async (req, res, next) => {
     try {
         debugApplication("Fetching TestRecords count");
@@ -63,6 +83,14 @@ export const getRecordCount = async (req, res, next) => {
 
 
 
+/**
+ * Handle GET /api/test-stream endpoint
+ * Streams large datasets using SQL Server's streaming capabilities
+ * Returns JSON data in chunked transfer encoding for memory efficiency
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export const streamRecords = async (req, res, next) => {
     try {
         debugApplication("Starting to stream TestRecords");
@@ -112,7 +140,14 @@ export const streamRecords = async (req, res, next) => {
     }
 }
 
-// Test endpoint to trigger database errors
+/**
+ * Handle GET /api/test-db-error endpoint
+ * Tests database error handling by querying a non-existent table
+ * Used to verify error middleware and logging work correctly
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export const testDatabaseError = async (req, res, next) => {
     try {
         debugApplication("Testing database error handling");

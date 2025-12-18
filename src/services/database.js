@@ -5,7 +5,11 @@ let isShuttingDown = false;
 let pool = null;
 let poolConnect = null;
 
-// Validate required environment variables
+/**
+ * Validate that all required environment variables are present
+ * @throws {Error} If any required environment variable is missing
+ * @private
+ */
 const validateEnvironment = () => {
   const required = ["DB_USER", "DB_PASSWORD", "DB_HOST", "DB_NAME"];
   const missing = required.filter((key) => !process.env[key]);
@@ -16,7 +20,12 @@ const validateEnvironment = () => {
   }
 };
 
-// Create config lazily to ensure environment variables are loaded
+/**
+ * Create database configuration from environment variables
+ * Lazily loaded to ensure environment variables are available
+ * @returns {Object} mssql connection configuration object
+ * @private
+ */
 const getDbConfig = () => {
   validateEnvironment();
   return {
@@ -39,6 +48,13 @@ const getDbConfig = () => {
   };
 };
 
+/**
+ * Get or create the singleton connection pool
+ * Ensures only one pool exists across the application
+ * Implements lazy initialization with promise caching to prevent race conditions
+ * @returns {Promise<mssql.ConnectionPool>} Connected database pool
+ * @throws {Error} If shutting down or unable to connect
+ */
 export const getConnectionPool = async () => {
   if (isShuttingDown) {
     throw new Error("Cannot get connection pool during shutdown");
@@ -176,7 +192,9 @@ export const executeQuery = async (queryFn, operationName = "Database operation"
 };
 
 /**
- * Check if the pool is connected and healthy
+ * Check if the database pool is connected and healthy
+ * Runs a simple test query to verify connectivity
+ * @returns {Promise<boolean>} True if healthy, false otherwise
  */
 export const isPoolHealthy = async () => {
   try {
@@ -188,6 +206,12 @@ export const isPoolHealthy = async () => {
   }
 };
 
+/**
+ * Run a simple test query to verify database connectivity
+ * @param {number} recQy - Test query parameter (must be non-negative)
+ * @returns {Promise<Array>} Query result recordset
+ * @throws {Error} If recQy is invalid or query fails
+ */
 export const initial_test = async (recQy = 1) => {
   // Validate input parameter upfront
   if (typeof recQy !== 'number' || recQy < 0) {
@@ -206,13 +230,18 @@ export const initial_test = async (recQy = 1) => {
 
 
 
+/**
+ * Test database error handling by attempting an operation with invalid input
+ * Used to verify that error handling and validation work correctly
+ * @throws {Error} Always throws an error (expected behavior)
+ */
 export const testBadRecord = async () => {
  try {
     debugMSSQL("Database failure test starting");
     await initial_test(-1);
     debugMSSQL("Initial failure test failed ");
   } catch (err) {
-    debugMSSQL("Initial database failre test passed: %O", {
+    debugMSSQL("Initial database failure test passed: %O", {
       message: err.message,
       code: err.code,
     });
