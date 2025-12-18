@@ -31,6 +31,7 @@ Provides granular, namespace-based debugging for development and troubleshooting
 debugServer      // express-mssql-pooling:server      - Server startup and lifecycle
 debugApplication // express-mssql-pooling:application - App initialization and config
 debugRoutes      // express-mssql-pooling:route       - Route handling and middleware
+debugMSSQL       // express-mssql-pooling:mssql       - Database operations and pool management
 ```
 
 ### Usage Examples
@@ -45,12 +46,18 @@ DEBUG=express-mssql-pooling:* npm start
 DEBUG=express-mssql-pooling:application,express-mssql-pooling:route npm start
 ```
 
+**Debug only database operations:**
+```bash
+DEBUG=express-mssql-pooling:mssql npm start
+```
+
 **In your code:**
 ```javascript
-import { debugApplication, debugRoutes } from './utils/debug.js';
+import { debugApplication, debugRoutes, debugMSSQL } from './utils/debug.js';
 
 debugApplication(`App starting with environment: ${process.env.NODE_ENV}`);
 debugRoutes(`Handling request to ${req.path}`);
+debugMSSQL('Creating new connection pool');
 ```
 
 ### When to Use
@@ -210,6 +217,8 @@ All three layers write to unified locations:
 |------|------|-------------|--------------|
 | Trace app startup | `debug.js` | Dev | `DEBUG=express-mssql-pooling:application npm start` |
 | Debug route handler | `debug.js` | Dev | `debugRoutes('Handler details...')` |
+| Debug database operations | `debug.js` | Dev | `DEBUG=express-mssql-pooling:mssql npm start` |
+| Trace connection pool | `debug.js` | Dev | `debugMSSQL('Pool operation...')` |
 | Log business events | `winston` | Both | `logger.info('Event occurred')` |
 | Monitor HTTP traffic | `morgan` | Both | Automatic, no config needed |
 | Find errors in production | `winston` | Prod | View `logs/app.log` |
