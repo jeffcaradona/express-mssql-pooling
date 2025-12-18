@@ -1,6 +1,6 @@
 {
   "name": "express-mssql-pooling",
-  "description": "A simple Express 5 application with ES6 modules and TypeScript support.",
+  "description": "Production-ready Express.js application demonstrating SQL Server connection pooling with singleton pattern, prepared statements, and comprehensive error handling.",
   "version": "0.0.1",
   "type": "module",
   "private": true,

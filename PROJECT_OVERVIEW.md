@@ -234,17 +234,33 @@ npm run start:dev
 
 The application uses `dotenv` to load environment variables from a `.env` file (not in version control).
 
+**Setup**:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
 **Example .env**:
 ```env
 NODE_ENV=development
-PORT=3000
-# Add database connection pooling config here
+PORT=1533
+DEBUG=express-mssql-pooling:*
+
+# SQL Server Configuration
+MSSQL_SA_PASSWORD=YourSecurePassword123!
+DB_HOST=localhost
+DB_PORT=1433
+DB_NAME=DemoApp
+DB_USER=sa
+DB_PASSWORD=YourSecurePassword123!
 ```
 
 **Key Variables**:
-- `PORT`: Server port (default: 3000)
+- `PORT`: Server port (default: 1533)
 - `NODE_ENV`: Environment mode (development/production)
-- Add MSSQL connection config variables as needed
+- `DEBUG`: Debug namespaces to enable
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`: Database connection settings
+- `MSSQL_SA_PASSWORD`: SQL Server SA password (for container initialization)
 
 ---
 

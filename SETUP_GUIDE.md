@@ -131,7 +131,13 @@ Before running this system, ensure you have:
 
 ### Step 1: Configure Environment Variables
 
-Edit [.env](.env) with your configuration:
+Create a `.env` file in the project root by copying the example:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your configuration:
 
 ```dotenv
 PORT=1533

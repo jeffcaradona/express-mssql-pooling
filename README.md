@@ -11,7 +11,8 @@ A production-ready Node.js Express application demonstrating best practices for 
 npm install
 
 # 2. Configure environment
-# Edit .env with your SQL Server credentials
+# Copy .env.example to .env and edit with your SQL Server credentials
+cp .env.example .env
 
 # 3. Start SQL Server container
 .\scripts\start-sqlserver.ps1
