@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 import { debugServer } from '../src/utils/debug.js';
+import logger from './utils/logger.js';
 
 import http from 'http'
 import { configDotenv } from 'dotenv';
@@ -28,21 +29,24 @@ app.set('port', port);
 const server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Initialize database first, then start listening.
+ * Fail-fast if DB initialization fails.
  */
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-
-// Initialize database after server is created but before it listens
 (async () => {
   try {
     await initializeDatabase();
+    logger.info('Database initialized successfully');
+    
+    // Only start listening after DB is ready
+    server.listen(port);
   } catch (err) {
-    debugServer('Failed to initialize database, server still starting: %O', { message: err.message });
+    logger.error('Failed to initialize database:', err);
+    logger.error('Exiting due to database initialization failure');
+    process.exit(1); // Fail-fast: let orchestrator restart
   }
 })();
+
 server.on('error', onError);
 server.on('listening', onListening);
 
@@ -82,11 +86,11 @@ function onError(error) {
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      logger.error(bind + ' requires elevated privileges');
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      logger.error(bind + ' is already in use');
       process.exit(1);
       break;
     default:
@@ -104,42 +108,50 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   const url = `http://localhost:${addr.port}`;
-  debugServer('Listening on ' + bind);
-  debugServer(`Server is running at ${url}`);
+  logger.info('Listening on ' + bind);
+  logger.info(`Server is running at ${url}`);
 }
 
-let shuttingDownServer = false; 
-// Graceful shutdown helper
+// Graceful shutdown
+let isShuttingDown = false;
+let forceExitTimer = null;
+
 const gracefulShutdown = async (signal) => {
-  if (shuttingDownServer) {
-    debugServer(`Shutdown already in progress, ignoring additional ${signal} signal`);
+  if (isShuttingDown) {
+    logger.warn(`Shutdown already in progress, ignoring additional ${signal} signal`);
     return;
   }
-  shuttingDownServer = true;
+  isShuttingDown = true;
 
-  debugServer(`Received ${signal}. Shutting down gracefully...`);
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
+  
+  // Force exit after 40 seconds if graceful shutdown hangs
+  forceExitTimer = setTimeout(() => {
+    logger.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 40000); // 30s drain + 10s buffer
   
   // Stop accepting new connections
-  debugServer('Stopping HTTP server from accepting new connections...');
+  logger.info('Stopping HTTP server from accepting new connections...');
   server.close(async () => {
-    debugServer('HTTP server closed (all connections finished), waiting for active queries to complete...');
+    logger.info('HTTP server closed (all connections finished), waiting for active queries to complete...');
     
     try {
       // Give active database queries time to complete (30 seconds drain)
       await gracefulDatabaseShutdown(30000);
-      debugServer('Database connections closed successfully.');
+      logger.info('Database connections closed successfully.');
+      
+      // Clear force-exit timer since we succeeded
+      if (forceExitTimer) {
+        clearTimeout(forceExitTimer);
+      }
+      
       process.exit(0);
     } catch (err) {
-      debugServer('Error closing database connections: %O', { message: err.message });
+      logger.error('Error closing database connections:', err);
       process.exit(1);
     }
   });
-
-  // Force shutdown after timeout (40 seconds total: 30s drain + 10s buffer)
-  setTimeout(() => {
-    debugServer('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
-  }, 40000);
 };
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));

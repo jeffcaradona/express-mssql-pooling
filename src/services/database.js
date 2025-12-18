@@ -59,16 +59,15 @@ export const getConnectionPool = async () => {
         pool = new mssql.ConnectionPool(dbConfig);
 
         // Attach error event listeners for automatic recovery
-        pool.on("error", (err) => {
+        pool.on("error", async (err) => {
           debugMSSQL("Pool error event: %O", {
             message: err.message,
             code: err.code,
           });
           // Mark pool as unhealthy so next call will attempt reconnection
           if (err.code === "ESOCKET" || err.code === "ECONNRESET") {
-            debugMSSQL("Connection lost, marking pool for reconnection");
-            pool = null;
-            poolConnect = null;
+            debugMSSQL("Fatal pool error detected: " + err.code + " - resetting pool");
+            await closeAndResetPool();
           }
         });
 
@@ -94,6 +93,25 @@ export const getConnectionPool = async () => {
   }
   
   return pool;
+};
+
+/**
+ * Safely close and reset the connection pool.
+ * Ensures pool.close() completes before nullifying references.
+ * This prevents connection leaks on fatal errors.
+ */
+export const closeAndResetPool = async () => {
+  debugMSSQL('Closing and resetting connection pool');
+  if (pool) {
+    try {
+      await pool.close();
+      debugMSSQL('Pool closed successfully');
+    } catch (err) {
+      debugMSSQL(`Error closing pool during reset: ${err.message}`);
+    }
+  }
+  pool = null;
+  poolConnect = null;
 };
 
 /**

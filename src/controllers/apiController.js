@@ -77,3 +77,60 @@ export const getRecordCount = async (req, res) => {
 };
 
 
+
+export const streamRecords = async (req, res) => {
+    try {
+        debugApplication("Starting to stream TestRecords");
+        const localPool = await getConnectionPool();
+        const request = localPool.request();
+        
+        // Enable streaming mode BEFORE calling query
+        request.stream = true;
+        
+        const query = "SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 10000) FOR JSON PATH";
+        
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Transfer-Encoding': 'chunked'
+        });
+
+        request.on('recordset', columns => {
+            // Emitted once for each recordset in a query
+            debugApplication("Recordset metadata received");
+        });
+
+        request.on('row', row => {
+            // FOR JSON PATH returns pre-formatted JSON string in a special column
+            // Just write it directly to the response
+            const jsonColumn = row[Object.keys(row)[0]];
+            res.write(jsonColumn);
+        });
+
+        request.on('error', err => {
+            debugApplication("Error streaming records: %O", err);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Stream error' });
+            } else {
+                res.end();
+            }
+        }); 
+        
+        request.on('done', result => {
+            debugApplication("Finished streaming records");
+            res.end();
+        });
+        
+        // Call query AFTER setting up event listeners
+        request.query(query);
+    } catch (error) {
+        debugApplication("Error initiating record stream: %O", error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to stream records'
+        });
+    }
+        
+                
+}
+
+
