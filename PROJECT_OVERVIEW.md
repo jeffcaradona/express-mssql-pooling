@@ -2,11 +2,23 @@
 
 ## Project Summary
 
-**express-mssql-pooling** is a modern Express 5 web application built with ES6 modules and TypeScript support, designed to integrate with Microsoft SQL Server using connection pooling. The project demonstrates best practices for logging, debugging, and HTTP request handling.
+**express-mssql-pooling** is a modern Express 5 web application built with ES6 modules and TypeScript support, designed to integrate with Microsoft SQL Server using connection pooling. The project demonstrates best practices for logging, debugging, HTTP request handling, error management, and graceful shutdown procedures.
 
 - **Version**: 0.0.1
 - **Node.js Requirement**: >=18
 - **Module Type**: ES6 Modules
+
+### Key Features
+
+✅ **Singleton Connection Pool** - Single shared instance across the application  
+✅ **executeQuery Wrapper** - Automatic error handling and connection recovery  
+✅ **Prepared Statements** - SQL injection protection with parameterized queries  
+✅ **Structured Error Handling** - Consistent JSON error responses with proper HTTP codes  
+✅ **Streaming API** - Memory-efficient handling of large datasets  
+✅ **Graceful Shutdown** - Safe pool closure with configurable drain timeout  
+✅ **Comprehensive Logging** - Winston for production, debug module for development  
+✅ **Load Testing Ready** - Autocannon integration with performance benchmarks  
+✅ **Production Optimized** - Tuned connection pool (max: 25, min: 5)  
 
 ---
 
@@ -20,12 +32,17 @@ express-mssql-pooling/
 │   ├── app.js                    # Express app initialization & middleware setup
 │   ├── server.js                 # HTTP server startup & port management
 │   ├── controllers/              # Route controllers (business logic)
-│   │   └── indexController.js    # Home page controller
+│   │   ├── indexController.js    # Home page controller
+│   │   └── apiController.js      # API endpoint controllers
 │   ├── routes/                   # Express route definitions
-│   │   └── indexRouter.js        # Home page router
+│   │   ├── indexRouter.js        # Home page router
+│   │   └── apiRouter.js          # API routes with error handling
+│   ├── services/                 # Business logic services
+│   │   └── database.js           # Connection pool singleton & query wrapper
 │   ├── utils/                    # Utility modules
 │   │   ├── debug.js              # Debug namespace initialization
-│   │   └── logger.js             # Winston logger configuration
+│   │   ├── logger.js             # Winston logger configuration
+│   │   └── errorHandler.js       # Structured error handling
 │   └── views/                    # EJS template files
 │       ├── index.ejs             # Home page template
 │       └── error.ejs             # Error page template
@@ -37,12 +54,21 @@ express-mssql-pooling/
 │   ├── start-sql.sh              # Start SQL Server (Linux)
 │   ├── start-sqlserver.ps1       # Start SQL Server (Windows)
 │   ├── stop-sql.sh               # Stop SQL Server (Linux)
-│   └── stop-sqlserver.ps1        # Stop SQL Server (Windows)
+│   ├── stop-sqlserver.ps1        # Stop SQL Server (Windows)
+│   ├── init-db.js                # Database initialization script
+│   ├── load-test.js              # Autocannon load testing script
+│   └── test-graceful-shutdown.js # Graceful shutdown test script
 ├── docs/                         # Documentation
-│   └── debug_and_logging.md      # Debug & logging guide
+│   ├── api_endpoints.md          # Complete API reference
+│   ├── error_handling.md         # Error handling guide
+│   ├── debug_and_logging.md      # Debug & logging guide
+│   ├── executequery_pattern.md   # Query wrapper pattern guide
+│   └── load_testing.md           # Performance testing guide
 ├── Dockerfile                    # Docker containerization
 ├── package.json                  # Dependencies & scripts
-├── README.md                     # Project readme (currently empty)
+├── README.md                     # Project readme with quick start
+├── SETUP_GUIDE.md                # Comprehensive setup guide
+├── PROJECT_OVERVIEW.md           # This file - architecture overview
 └── .env                          # Environment configuration (git-ignored)
 ```
 
@@ -311,11 +337,17 @@ Located in `scripts/` directory for managing SQL Server lifecycle:
 
 ## Documentation References
 
-- [Debug & Logging Guide](docs/debug_and_logging.md) - Detailed debugging instructions
-- `.env` configuration - Create this file for local settings
+- [README.md](README.md) - Quick start guide and feature overview
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) - Comprehensive setup and configuration
+- [API Endpoints](docs/api_endpoints.md) - Complete API reference
+- [Error Handling](docs/error_handling.md) - Error handling patterns and debugging
+- [Debug & Logging Guide](docs/debug_and_logging.md) - Logging configuration and debugging
+- [executeQuery Pattern](docs/executequery_pattern.md) - Query wrapper best practices
+- [Load Testing](docs/load_testing.md) - Performance testing and optimization
 - [Express 5 Documentation](https://expressjs.com/)
 - [Winston Logger Documentation](https://github.com/winstonjs/winston)
 - [Debug Module Documentation](https://www.npmjs.com/package/debug)
+- [mssql Documentation](https://github.com/tediousjs/node-mssql)
 
 ---
 

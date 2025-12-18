@@ -103,6 +103,100 @@ export const getRecordCount = async (req, res) => {
 };
 ```
 
+#### 5. **Structured Error Handling**
+Custom error handling system provides consistent API responses:
+- **DatabaseError class** wraps database errors with proper HTTP status codes
+- **Error categorization** distinguishes connection (503), timeout (504), and query (500) errors
+- **Middleware pattern** ensures all API routes return consistent JSON error responses
+- **User-friendly messages** hide internal error details from clients
+
+**Location**: [src/utils/errorHandler.js](src/utils/errorHandler.js)
+
+```javascript
+export class DatabaseError extends Error {
+    constructor(originalError, operation) {
+        super(originalError.message);
+        this.statusCode = this.categorizeError(originalError);
+    }
+    
+    categorizeError(error) {
+        // Connection failures -> 503
+        // Timeout errors -> 504
+        // Default -> 500
+    }
+}
+```
+
+**Usage in controllers**:
+```javascript
+try {
+    const result = await initial_test();
+    res.json({ success: true, data: result });
+} catch (error) {
+    next(new DatabaseError(error, 'getInitialTest'));
+}
+```
+
+#### 6. **Graceful Shutdown**
+Application handles shutdown signals gracefully:
+- **Drain timeout** allows active queries up to 30 seconds to complete
+- **Connection pool closure** prevents new connections during shutdown
+- **Signal handling** responds to SIGTERM and SIGINT signals
+- **Status tracking** prevents duplicate shutdown attempts
+
+**Location**: [src/services/database.js](src/services/database.js)
+
+```javascript
+export const gracefulShutdown = async (drainTimeout = 30000) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  if (pool) {
+    const closePromise = pool.close();
+    const timeoutPromise = new Promise(resolve => 
+      setTimeout(resolve, drainTimeout)
+    );
+    await Promise.race([closePromise, timeoutPromise]);
+  }
+};
+```
+
+**Registered in server.js**:
+```javascript
+process.on('SIGTERM', async () => {
+  await gracefulShutdown();
+  process.exit(0);
+});
+```
+
+#### 7. **Streaming Support**
+Efficiently handle large datasets using Node.js streams:
+- **Memory efficiency** - processes data in chunks rather than loading all at once
+- **Chunked transfer** - uses HTTP chunked encoding for progressive responses
+- **Event-driven** - leverages mssql stream mode with event handlers
+- **JSON formatting** - uses `FOR JSON PATH` for server-side formatting
+
+**Location**: [src/controllers/apiController.js](src/controllers/apiController.js)
+
+```javascript
+export const streamRecords = async (req, res, next) => {
+    const localPool = await getConnectionPool();
+    const request = localPool.request();
+    request.stream = true;
+    
+    request.on('row', row => {
+        res.write(row[Object.keys(row)[0]]);
+    });
+    
+    request.on('done', () => res.end());
+    request.query("SELECT * FROM Table FOR JSON PATH");
+};
+```
+  
+  res.json({ success: true, data: result });
+};
+```
+
 ---
 
 ## Prerequisites
@@ -325,6 +419,19 @@ node .\scripts\init-db.js
 
 ### Stop the Express App
 In the terminal running the app, press `Ctrl+C`
+
+The application performs a graceful shutdown:
+1. Stops accepting new database connections
+2. Waits up to 30 seconds for active queries to complete
+3. Closes the connection pool
+4. Exits cleanly
+
+**Debug output during shutdown**:
+```
+express-mssql-pooling:mssql Starting graceful shutdown of database pool...
+express-mssql-pooling:mssql Graceful shutdown completed
+express-mssql-pooling:server Server closed
+```
 
 ### Stop SQL Server Container
 

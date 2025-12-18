@@ -30,7 +30,10 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 
 ### Core Documentation
 - [SETUP_GUIDE.md](SETUP_GUIDE.md) - Complete setup and configuration guide
+- [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) - Architecture and project structure
+- [api_endpoints.md](docs/api_endpoints.md) - Complete API reference with examples
 - [executequery_pattern.md](docs/executequery_pattern.md) - Query wrapper pattern and best practices
+- [error_handling.md](docs/error_handling.md) - Error handling architecture and patterns
 - [load_testing.md](docs/load_testing.md) - Performance testing and pool tuning guide
 - [debug_and_logging.md](docs/debug_and_logging.md) - Debugging and logging configuration
 
@@ -39,7 +42,9 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 - Step-by-step setup instructions
 - Connection pool optimization
 - Input validation and SQL injection prevention
-- Error handling and connection recovery
+- Structured error handling and recovery
+- Streaming large datasets efficiently
+- Graceful shutdown procedures
 - Load testing procedures
 - Troubleshooting guide
 - Production deployment best practices
@@ -53,6 +58,9 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 ✅ **Containerized SQL Server** - Easy setup with Podman  
 ✅ **Debug Logging** - Comprehensive operation visibility  
 ✅ **Production-Grade Performance** - 80K+ req/min, 14ms avg latency, 0% error rate  
+✅ **Streaming API** - Efficient large dataset handling with chunked transfer  
+✅ **Graceful Shutdown** - Safe connection pool closure with drain timeout  
+✅ **Structured Error Handling** - Consistent JSON error responses with proper HTTP status codes  
 
 ## 📊 Performance Benchmarks
 
@@ -142,9 +150,22 @@ Creates:
 
 ## 🧪 Testing
 
-### Test the API endpoint
+### Test the API endpoints
 ```powershell
+# Basic query test with prepared statements
 Invoke-WebRequest http://localhost:1533/api/initial-test
+
+# Get total record count
+Invoke-WebRequest http://localhost:1533/api/record-count
+
+# Stream large dataset (10,000 records as JSON)
+Invoke-WebRequest http://localhost:1533/api/test-stream
+
+# Test error validation
+Invoke-WebRequest http://localhost:1533/api/failure-test
+
+# Test database error handling
+Invoke-WebRequest http://localhost:1533/api/test-db-error
 ```
 
 ### Monitor debug logs
@@ -158,6 +179,8 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 
 ```powershell
 # Stop Express app: Press Ctrl+C
+# The application performs a graceful shutdown, waiting up to 30 seconds
+# for active database queries to complete before closing connections
 
 # Stop SQL Server container:
 .\scripts\stop-sqlserver.ps1
@@ -172,7 +195,7 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 │   ├── services/database.js   # Connection pool (singleton)
 │   ├── controllers/           # Route handlers
 │   ├── routes/                # Route definitions
-│   ├── utils/                 # Logging, debugging
+│   ├── utils/                 # Logging, debugging, error handling
 │   └── views/                 # EJS templates
 ├── scripts/
 │   ├── start-sqlserver.ps1    # Start SQL Server
@@ -182,6 +205,74 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 ├── .env                       # Environment config
 └── package.json              # Dependencies
 ```
+
+## 🌐 API Endpoints
+
+All API endpoints return JSON responses with a consistent structure.
+
+### GET /api/initial-test
+Test endpoint using prepared statements.
+```json
+{
+  "success": true,
+  "data": [{ "REC_QY": 1 }]
+}
+```
+
+### GET /api/record-count
+Get total count of records in TestRecords table.
+```json
+{
+  "success": true,
+  "data": [{ "totalRecords": 2 }]
+}
+```
+
+### GET /api/test-stream
+Stream large dataset (10,000 records) using chunked transfer encoding.
+Returns: JSON array streamed in chunks
+
+### GET /api/failure-test
+Test input validation - should return success when validation correctly rejects bad input.
+```json
+{
+  "success": true,
+  "message": "Bad record test failed as expected"
+}
+```
+
+### GET /api/test-db-error
+Test database error handling by querying a non-existent table.
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DATABASE_ERROR",
+    "message": "An error occurred while processing your request",
+    "status": 500
+  }
+}
+```
+
+### Error Responses
+All errors follow a consistent format:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "status": 500
+  }
+}
+```
+
+**Error Codes:**
+- `DATABASE_UNAVAILABLE` (503) - Database connection failed
+- `DATABASE_TIMEOUT` (504) - Query exceeded timeout
+- `DATABASE_ERROR` (500) - General database error
+- `ROUTE_NOT_FOUND` (404) - API endpoint doesn't exist
+- `INTERNAL_ERROR` (500) - Unexpected server error
 
 ## 🎯 Why This Matters
 
@@ -196,6 +287,15 @@ Prevents SQL injection and improves query performance through query plan caching
 
 ### Environment Configuration
 Separates secrets and environment-specific settings from code.
+
+### Structured Error Handling
+Custom `DatabaseError` class categorizes errors by type (connection, timeout, query) and returns appropriate HTTP status codes with consistent JSON responses.
+
+### Graceful Shutdown
+Safely closes the connection pool during application shutdown, allowing active queries to complete within a configurable timeout period.
+
+### Streaming Support
+Efficiently handles large datasets using Node.js streams and chunked transfer encoding, reducing memory usage for bulk data operations.
 
 ## 🚀 Extending the Application
 
