@@ -14,7 +14,7 @@ $ready = $false
 while ($attempt -lt $maxAttempts -and -not $ready) {
     try {
         # Try to execute a simple query
-        sqlcmd -S localhost -U sa -P $env:MSSQL_SA_PASSWORD -Q "SELECT @@VERSION" -ErrorAction Stop | Out-Null
+        sqlcmd -S localhost\$env:DB_INSTANCE -U sa -P $env:MSSQL_SA_PASSWORD -Q "SELECT @@VERSION" -ErrorAction Stop | Out-Null
         $ready = $true
         Write-Host "SQL Server is ready!"
     } catch {

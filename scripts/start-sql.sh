@@ -12,7 +12,8 @@ podman run -d \
   --name sqlserver \
   -e "ACCEPT_EULA=Y" \
   -e "MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}" \
-  -e "MSSQL_PID=Express" \
+  -e "MSSQL_PID=Developer" \
+  -e "MSSQL_AGENT_ENABLED=true" \
   -v sqlserver-data:/var/opt/mssql \
   mcr.microsoft.com/mssql/server:2022-latest
 
