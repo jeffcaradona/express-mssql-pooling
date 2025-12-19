@@ -254,11 +254,15 @@ The database API shows much higher variance due to resource contention.
 ```
 Endpoint: /api/user-dashboard
 Queries per request: 5 (user info, posts, comments, likes, notifications)
-Network RTT: 2ms
+Network RTT: 2ms per query
 Query execution: 3ms each
 
-Minimum latency: (5 × 2ms) + (5 × 3ms) = 25ms
-Actual p99 latency: 80ms+ (with queuing and contention)
+Minimum latency (sequential execution): (5 × 2ms) + (5 × 3ms) = 25ms
+Minimum latency (if parallelized): max(2ms + 3ms) = 5ms (limited by slowest query)
+Actual p99 latency: 80ms+ (with queuing, contention, and pool wait times)
+
+Note: Most ORMs and database drivers execute queries sequentially unless
+explicitly parallelized, so sequential execution is the common case.
 ```
 
 #### 5. Connection Establishment Overhead
@@ -456,9 +460,20 @@ autocannon({
 
 **Query Plan Cache Warm-Up**:
 ```javascript
-// Warm up the database before testing
+// Warm up the database before testing (using concurrent requests)
+const warmupPromises = [];
 for (let i = 0; i < 100; i++) {
-    await axios.get('http://localhost:1533/api/record-count');
+    warmupPromises.push(axios.get('http://localhost:1533/api/record-count'));
+}
+await Promise.all(warmupPromises);
+
+// Alternative: Batched warm-up to avoid overwhelming the database
+const batchSize = 10;
+for (let i = 0; i < 100; i += batchSize) {
+    const batch = Array(batchSize).fill(null).map(() => 
+        axios.get('http://localhost:1533/api/record-count')
+    );
+    await Promise.all(batch);
 }
 
 // Now run the actual load test
@@ -466,7 +481,8 @@ autocannon({ ... });
 ```
 
 **Database Version and Configuration**:
-- SQL Server 2019 vs 2022 have different query optimizers
+- SQL Server versions have different query optimizers (e.g., 2019 introduced adaptive joins, 2022 improved parameter sniffing)
+- Reference: [SQL Server version comparison](https://learn.microsoft.com/en-us/sql/sql-server/)
 - Memory allocation affects buffer pool hit ratio
 - TempDB configuration impacts sorting and joins
 
