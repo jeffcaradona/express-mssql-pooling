@@ -84,21 +84,10 @@ app.use(
 );
 app.use("/js", express.static(path.join(__dirname, "../node_modules/dayjs")));
 
-import indexRouter from "./routes/indexRouter.js";
-import apiRouter from "./routes/apiRouter.js";
-app.use("/", indexRouter);
-app.use("/ajax", (req, res, next) => res.json("AJAX"));
-app.use("/api", apiRouter);
 
-// TODO: Separate monitoring endpoints into their own router
-// Add to your load test or create a monitoring endpoint
-app.get('/health/threads', (req, res) => {
-    const resources = process.getActiveResourcesInfo();
-    res.json({
-        activeResources: resources,
-        threadPoolSize: process.env.UV_THREADPOOL_SIZE || 4
-    });
-});
+import router from "./router.js";
+app.use(router);
+
 
 
 // catch 404 and forward to error handler

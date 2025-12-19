@@ -72,22 +72,29 @@ export const streamRecords = async (req, res, next) => {
         // Enable streaming mode BEFORE calling query
         request.stream = true;
         
-        const query = "SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 10000) FOR JSON PATH";
+        const query =
+          "PRINT '--Start of JSON';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 10000) FOR JSON PATH;PRINT '--End of JSON';";
         
-        res.writeHead(200, {
-            'Content-Type': 'application/json',
-            'Transfer-Encoding': 'chunked'
+
+        request.on('info', info => {
+            debugApplication("Info event: %O", info);
         });
 
         request.on('recordset', columns => {
             // Emitted once for each recordset in a query
             debugApplication("Recordset metadata received");
+            // Set headers for chunked JSON response since we know the query executed successfully.
+            res.writeHead(200, {
+              "Content-Type": "application/json",
+              "Transfer-Encoding": "chunked",
+            });            
         });
 
         request.on('row', row => {
             // FOR JSON PATH returns pre-formatted JSON string in a special column
             // Just write it directly to the response
             const jsonColumn = row[Object.keys(row)[0]];
+            
             res.write(jsonColumn);
         });
 
