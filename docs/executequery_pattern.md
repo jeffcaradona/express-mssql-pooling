@@ -301,6 +301,48 @@ express-mssql-pooling:database Connection pool closed successfully +15ms
 
 ## When NOT to Use executeQuery
 
+### Streaming Operations
+
+For streaming large datasets, don't use `executeQuery` because:
+- Streaming requires direct event handler attachment
+- Results aren't returned as a value but written to response stream
+- Event-driven pattern doesn't fit the wrapper's callback model
+
+**Instead, handle errors directly in streaming endpoints:**
+
+```javascript
+export const streamRecords = async (req, res, next) => {
+    try {
+        const localPool = await getConnectionPool();
+        const request = localPool.request();
+        request.stream = true;
+        
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Transfer-Encoding': 'chunked'
+        });
+
+        request.on('row', row => {
+            res.write(row[Object.keys(row)[0]]);
+        });
+
+        request.on('error', err => {
+            if (!res.headersSent) {
+                next(new DatabaseError(err, 'streamRecords'));
+            } else {
+                res.end();
+            }
+        });
+        
+        request.on('done', () => res.end());
+        
+        request.query("SELECT * FROM Table FOR JSON PATH");
+    } catch (error) {
+        next(new DatabaseError(error, 'streamRecords'));
+    }
+}
+```
+
 ### Wrapper Functions in database.js
 
 If creating reusable query functions in [database.js](../src/services/database.js), the wrapper function itself should use executeQuery:
