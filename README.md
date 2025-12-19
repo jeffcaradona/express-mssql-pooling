@@ -1,6 +1,6 @@
 # Express.js + SQL Server Connection Pooling
 
-A production-ready Node.js Express application demonstrating best practices for SQL Server integration with connection pooling, singleton pattern, and prepared statements.
+A production-ready demo Node.js Express application demonstrating best practices for SQL Server integration with connection pooling, singleton pattern, and prepared statements.
 
 **⚡ Performance**: Handles 80,000+ requests/minute with 14ms average latency under load (20 concurrent users, 0% error rate).
 
