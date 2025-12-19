@@ -343,7 +343,12 @@ Dramatically improved consistency and lower tail latency
 **Enabling and Testing RCSI**:
 ```sql
 -- Enable READ COMMITTED SNAPSHOT on your database
+-- WARNING: WITH ROLLBACK IMMEDIATE forcefully terminates all active connections
+-- For production, use WITHOUT ROLLBACK IMMEDIATE or schedule during maintenance window
 ALTER DATABASE DemoApp SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;
+
+-- Alternative for production (waits for existing transactions to complete):
+-- ALTER DATABASE DemoApp SET READ_COMMITTED_SNAPSHOT ON;
 
 -- Verify it's enabled
 SELECT name, is_read_committed_snapshot_on 
@@ -532,7 +537,7 @@ autocannon({
 - Writes acquire exclusive locks (with traditional isolation)
 - Reads may be blocked by writes (without RCSI)
 - Pure read tests show unrealistically good performance
-- **Consider enabling READ COMMITTED SNAPSHOT** to reduce lock contention and get more consistent latency (see [Transaction Isolation section](#6-transaction-isolation-and-acid-guarantees))
+- **Consider enabling READ COMMITTED SNAPSHOT** to reduce lock contention and get more consistent latency (see [Transaction Isolation section](#transaction-isolation-and-acid-guarantees))
 
 #### 6. Account for Database-Specific Factors
 
