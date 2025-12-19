@@ -35,6 +35,7 @@ Invoke-WebRequest http://localhost:1533/api/initial-test
 - [executequery_pattern.md](docs/executequery_pattern.md) - Query wrapper pattern and best practices
 - [error_handling.md](docs/error_handling.md) - Error handling architecture and patterns
 - [load_testing.md](docs/load_testing.md) - Performance testing and pool tuning guide
+  - **New**: Understanding Database-Backed API Latency - explains how database connections affect autocannon p95/p99 metrics
 - [debug_and_logging.md](docs/debug_and_logging.md) - Debugging and logging configuration
 
 ### Topics Covered
