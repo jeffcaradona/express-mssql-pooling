@@ -280,15 +280,92 @@ explicitly parallelized, so sequential execution is the common case.
 #### 6. Transaction Isolation and ACID Guarantees
 
 **Isolation Levels Impact Performance**:
-- `READ UNCOMMITTED`: Fast but dirty reads
-- `READ COMMITTED`: Default, good balance
+- `READ UNCOMMITTED`: Fast but dirty reads possible
+- `READ COMMITTED`: Default, good balance, uses shared locks
 - `REPEATABLE READ`: Holds locks longer, more blocking
 - `SERIALIZABLE`: Slowest, maximum consistency
 
+**SQL Server Snapshot-Based Isolation Levels**:
+
+SQL Server offers two snapshot-based isolation levels that can significantly improve concurrency and reduce latency spikes under load:
+
+**READ COMMITTED SNAPSHOT (RCSI)**:
+- Row versioning alternative to traditional `READ COMMITTED`
+- Readers don't block writers, writers don't block readers
+- Uses tempdb for version store (requires adequate tempdb sizing)
+- Enabled at database level: `ALTER DATABASE MyDB SET READ_COMMITTED_SNAPSHOT ON`
+- Queries automatically use RCSI without changing application code
+- **Performance impact on load testing**:
+  - Reduces lock contention → lower p99 latency
+  - More consistent response times (lower stdev)
+  - Eliminates reader/writer blocking → better throughput
+  - Trade-off: Increased tempdb I/O and memory usage
+
+**SNAPSHOT Isolation**:
+- Similar to RCSI but provides transaction-level consistency
+- Must be explicitly requested: `SET TRANSACTION ISOLATION LEVEL SNAPSHOT`
+- Enabled at database level: `ALTER DATABASE MyDB SET ALLOW_SNAPSHOT_ISOLATION ON`
+- Prevents phantom reads without locking
+- **Performance impact on load testing**:
+  - Even lower contention than RCSI
+  - Predictable read performance under write load
+  - May show update conflicts (error 3960) under high concurrency
+  - Requires more tempdb space than RCSI
+
+**Comparing Traditional vs Snapshot Isolation in Load Tests**:
+
+```
+Traditional READ COMMITTED (lock-based):
+┌─────────┬────────┬────────┬────────┬────────┬───────────┐
+│ Latency │ 50%    │ 95%    │ 99%    │ Avg    │ Stdev     │
+├─────────┼────────┼────────┼────────┼────────┼───────────┤
+│         │ 15 ms  │ 120 ms │ 450 ms │ 45 ms  │ 95 ms     │
+└─────────┴────────┴────────┴────────┴────────┴───────────┘
+High variance due to lock waits
+
+With READ COMMITTED SNAPSHOT enabled:
+┌─────────┬────────┬────────┬────────┬────────┬───────────┐
+│ Latency │ 50%    │ 95%    │ 99%    │ Avg    │ Stdev     │
+├─────────┼────────┼────────┼────────┼────────┼───────────┤
+│         │ 12 ms  │ 22 ms  │ 35 ms  │ 15 ms  │ 8 ms      │
+└─────────┴────────┴────────┴────────┴────────┴───────────┘
+Dramatically improved consistency and lower tail latency
+```
+
+**When to Use Snapshot Isolation for Better Load Test Results**:
+- ✅ Read-heavy workloads with occasional writes
+- ✅ Long-running reports that would otherwise block writes
+- ✅ Applications where readers blocking writers is a bottleneck
+- ✅ When you need more predictable p95/p99 latency
+- ⚠️ Requires sufficient tempdb space (monitor tempdb version store)
+- ⚠️ May increase memory pressure and tempdb I/O
+
+**Enabling and Testing RCSI**:
+```sql
+-- Enable READ COMMITTED SNAPSHOT on your database
+ALTER DATABASE DemoApp SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;
+
+-- Verify it's enabled
+SELECT name, is_read_committed_snapshot_on 
+FROM sys.databases 
+WHERE name = 'DemoApp';
+
+-- Monitor version store size
+SELECT 
+    SUM(version_store_reserved_page_count) * 8 / 1024 AS version_store_mb
+FROM sys.dm_db_file_space_usage;
+```
+
+After enabling RCSI, re-run your autocannon tests and compare:
+- p99 latency should decrease significantly
+- Standard deviation should be lower
+- Throughput may increase due to reduced blocking
+
 **Transaction Duration**:
-- Long-running transactions hold locks
-- Other queries block waiting for locks
-- This shows up as high p99 latency spikes
+- Long-running transactions hold locks (or consume version store space with RCSI)
+- Other queries block waiting for locks (traditional isolation)
+- With RCSI/SNAPSHOT, readers proceed with versioned data
+- This shows up as high p99 latency spikes (traditional) or consistent latency (RCSI)
 
 ### Interpreting Autocannon Results for Database APIs
 
@@ -452,9 +529,10 @@ autocannon({
 ```
 
 **Why This Matters**:
-- Writes acquire exclusive locks
-- Reads may be blocked by writes
+- Writes acquire exclusive locks (with traditional isolation)
+- Reads may be blocked by writes (without RCSI)
 - Pure read tests show unrealistically good performance
+- **Consider enabling READ COMMITTED SNAPSHOT** to reduce lock contention and get more consistent latency (see [Transaction Isolation section](#6-transaction-isolation-and-acid-guarantees))
 
 #### 6. Account for Database-Specific Factors
 
@@ -494,7 +572,7 @@ p50: 15ms
 p99: 800ms
 ```
 **Cause**: Connection pool exhaustion or intermittent lock contention  
-**Action**: Increase pool size or investigate locks
+**Action**: Increase pool size or investigate locks; consider enabling READ COMMITTED SNAPSHOT to reduce lock contention
 
 🚩 **Increasing Latency Over Time**
 ```
