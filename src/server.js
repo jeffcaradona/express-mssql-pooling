@@ -1,3 +1,4 @@
+
 /**
  * Module dependencies.
  */
@@ -34,7 +35,7 @@ const server = http.createServer(app);
 (async () => {
   try {
     await initializeDatabase();
-    logger.info('Database initialized successfully');
+    debugServer("Database initialized successfully");
     
     // Only start listening after DB is ready
     server.listen(port);
@@ -106,8 +107,8 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   const url = `http://localhost:${addr.port}`;
-  logger.info('Listening on ' + bind);
-  logger.info(`Server is running at ${url}`);
+  debugServer("Listening on " + bind);
+  debugServer(`Server is running at ${url}`);
 }
 
 // Graceful shutdown
@@ -132,12 +133,14 @@ const gracefulShutdown = async (signal) => {
   // Stop accepting new connections
   logger.info('Stopping HTTP server from accepting new connections...');
   server.close(async () => {
-    logger.info('HTTP server closed (all connections finished), waiting for active queries to complete...');
+    debugServer(
+      "HTTP server closed (all connections finished), waiting for active queries to complete..."
+    );
     
     try {
       // Give active database queries time to complete (30 seconds drain)
       await gracefulDatabaseShutdown(30000);
-      logger.info('Database connections closed successfully.');
+      debugServer("Database connections closed successfully.");
       
       // Clear force-exit timer since we succeeded
       if (forceExitTimer) {
