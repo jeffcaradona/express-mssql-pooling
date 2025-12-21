@@ -3,7 +3,7 @@ import autocannon from 'autocannon';
 const runLoadTest = async () => {
   try {
     const result = await autocannon({
-      url: 'http://localhost:1533/api/record-count',
+      url: 'http://localhost:3000/api/record-count',
       connections: 20,     // 20 concurrent connections (users)
       duration: 30,        // 30 seconds (1/2 minute)
       pipelining: 1        // 1 request per connection at a time

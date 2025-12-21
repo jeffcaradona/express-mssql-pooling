@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Test script to demonstrate graceful shutdown behavior
  * 
@@ -76,7 +74,7 @@ async function runTest() {
   }, 15000);
 }
 
-console.log('Make sure the server is running on port 1533');
+console.log('Make sure the server is running on port 3000');
 console.log('Start with: npm run start:dev\n');
 
 // Wait a moment for user to read
