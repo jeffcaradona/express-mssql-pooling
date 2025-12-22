@@ -21,7 +21,7 @@ apiRouter.get("/test-db-error", testDatabaseError);
 import { errorMiddleware } from '../utils/errorHandler.js';
 
 // 404 handler for unknown API routes (must be before error middleware)
-apiRouter.use((req, res, next) => {
+apiRouter.use((req, res, _next) => {
     res.status(404).json({
         success: false,
         error: {

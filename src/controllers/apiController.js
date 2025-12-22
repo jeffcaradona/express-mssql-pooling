@@ -20,7 +20,7 @@ export const getInitialTest = async (req, res, next) => {
     }
 };
 
-export const getBadTest = async (req, res, next) => {
+export const getBadTest = async (_req, res, _next) => {
     try {
         debugApplication("Starting bad record test");   
         await testBadRecord();
@@ -38,7 +38,7 @@ export const getBadTest = async (req, res, next) => {
     }
 };
 
-export const getRecordCount = async (req, res, next) => {
+export const getRecordCount = async (_req, res, next) => {
     try {
         debugApplication("Fetching TestRecords count");
         
@@ -63,7 +63,7 @@ export const getRecordCount = async (req, res, next) => {
 
 
 
-export const streamRecords = async (req, res, next) => {
+export const streamRecords = async (_req, res, next) => {
     try {
         debugApplication("Starting to stream TestRecords");
         const localPool = await getConnectionPool();
@@ -80,7 +80,7 @@ export const streamRecords = async (req, res, next) => {
             debugApplication("Info event: %O", info);
         });
 
-        request.on('recordset', columns => {
+        request.on('recordset', _columns => {
             // Emitted once for each recordset in a query
             debugApplication("Recordset metadata received");
             // Set headers for chunked JSON response since we know the query executed successfully.
@@ -107,7 +107,7 @@ export const streamRecords = async (req, res, next) => {
             }
         }); 
         
-        request.on('done', result => {
+        request.on('done', _result => {
             debugApplication("Finished streaming records");
             res.end();
         });

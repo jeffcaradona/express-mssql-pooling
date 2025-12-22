@@ -8,7 +8,7 @@ const router = Router();
 // Mount routers
 router.use("/api", apiRouter);
 router.use("/", indexRouter);
-router.use("/ajax", (req, res, next) => res.json("AJAX"));
+router.use("/ajax", (_req, res, _next) => res.json("AJAX"));
 
 
 // Monitoring endpoint
