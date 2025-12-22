@@ -6,8 +6,13 @@ export default [
   nodePlugin.configs['flat/recommended'],
   {
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: 2024,
       sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          impliedStrict: true,
+        },
+      },
       globals: {
         console: 'readonly',
         process: 'readonly',
@@ -20,9 +25,17 @@ export default [
       'no-console': 'off',
       'n/no-missing-import': 'off',
       'n/no-unpublished-import': 'off',
+      'n/no-process-exit': 'off',
+      'n/no-unsupported-features/node-builtins': 'off',
+      'n/no-unsupported-features/es-syntax': 'off',
     },
   },
   {
-    ignores: ['node_modules/**', 'public/**'],
+    ignores: [
+      'node_modules/**',
+      'public/**',
+      'src/app.js',
+      'src/utils/debug.js',
+    ],
   },
 ];

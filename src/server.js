@@ -2,20 +2,25 @@
 /**
  * Module dependencies.
  */
-import { debugServer } from '../src/utils/debug.js';
-import logger from './utils/logger.js';
 
-import http from 'http'
+// Load environment variables first
 import { configDotenv } from 'dotenv';
 configDotenv();
 
+// Node.js built-ins
+import http from 'http';
+
+// Local utilities and services
+import { debugServer } from './utils/debug.js';
+import logger from './utils/logger.js';
 import { initializeDatabase, gracefulShutdown as gracefulDatabaseShutdown } from './services/database.js';
+
+// Express app
+import app from './app.js';
 
 /**
  * Get port from environment and store in Express.
  */
-
-import app from './app.js'
 
 
 const port = normalizePort(process.env.PORT || '3000');
@@ -42,7 +47,8 @@ const server = http.createServer(app);
   } catch (err) {
     logger.error('Failed to initialize database:', err);
     logger.error('Exiting due to database initialization failure');
-    process.exit(1); // Fail-fast: let orchestrator restart
+    // Use setImmediate to allow error to be logged before exit
+    setImmediate(() => process.exit(1));
   }
 })();
 
@@ -86,11 +92,11 @@ function onError(error) {
   switch (error.code) {
     case 'EACCES':
       logger.error(bind + ' requires elevated privileges');
-      process.exit(1);
+      setImmediate(() => process.exit(1));
       break;
     case 'EADDRINUSE':
       logger.error(bind + ' is already in use');
-      process.exit(1);
+      setImmediate(() => process.exit(1));
       break;
     default:
       throw error;
@@ -127,7 +133,7 @@ const gracefulShutdown = async (signal) => {
   // Force exit after 40 seconds if graceful shutdown hangs
   forceExitTimer = setTimeout(() => {
     logger.error('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
+    setImmediate(() => process.exit(1));
   }, 40000); // 30s drain + 10s buffer
   
   // Stop accepting new connections
