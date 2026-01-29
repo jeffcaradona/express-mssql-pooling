@@ -94,7 +94,7 @@ export const batchRecords = async (req, res, next) => {
     const localPool = await getConnectionPool();
     const request = localPool.request();
     const query =
-      "PRINT 'Start Query';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 100000);PRINT 'End Query';";
+      "PRINT 'Start batch Query';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 100000);PRINT 'End batch Query';";
 
     const queryResult = await request.query(query);
 
@@ -191,7 +191,7 @@ export const streamRecords = async (req, res, next) => {
     };
 
     const query =
-      "PRINT 'Start Query';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 100000);PRINT 'End Query';";
+      "PRINT 'Start stream Query';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 100000);PRINT 'End stream Query';";
 
     /**
      * 'info' event: Fires for PRINT statements in T-SQL
@@ -352,6 +352,210 @@ export const streamRecords = async (req, res, next) => {
     next(new DatabaseError(error, "streamRecords"));
   }
 };
+
+export const streamRecords_FOR_JSON_PATH = async (req, res, next) => {
+  try {
+    debugMSSQL("Starting to stream TestRecords using FOR JSON PATH");
+    
+    const localPool = await getConnectionPool();
+    const request = localPool.request();
+
+    // Enable streaming mode BEFORE calling query
+    // This prevents loading entire result set into memory
+    request.stream = true;
+
+    let jsonStructureStarted = false;
+    let dataStarted = false;
+    let requestCompleted = false; // Track if request is done
+
+    // Helper function to safely end JSON structure for FOR JSON PATH
+    const safeEndJSON = (
+      success = false,
+      errorMessage = null,
+      result = null,
+    ) => {
+      try {
+        // Close the data array if we haven't received any data
+        if (!dataStarted && jsonStructureStarted) {
+          res.write("[]");
+        }
+
+        const metadata = {
+          success,
+          ...(errorMessage && { error: errorMessage }),
+          ...(result && { result }),
+        };
+
+        if (jsonStructureStarted) {
+          res.write(`,${JSON.stringify(metadata).slice(1)}`);
+        } else {
+          res.write(JSON.stringify(metadata));
+        }
+
+        res.end();
+      } catch (endError) {
+        debugMSSQL("Error ending JSON structure: %O", endError);
+        if (!res.destroyed) {
+          res.destroy();
+        }
+      }
+    };
+
+    const query =
+      "PRINT 'Start Path Query';SELECT [value], NEWID() AS [UUID] FROM GENERATE_SERIES(1, 100000) FOR JSON PATH;PRINT 'End Path Query';";
+
+    /**
+     * 'info' event: Fires for PRINT statements in T-SQL
+     * Useful for debugging but not required for streaming
+     */
+    request.on("info", (info) => {
+      debugMSSQL("FOR JSON PATH Info event: %O", info);
+    });
+
+    /**
+     * 'recordset' event: Fires once when query starts, provides column metadata
+     * FOR JSON PATH returns a single unnamed column containing JSON fragments
+     * At this point we send HTTP headers and initialize the JSON structure
+     */
+    request.on("recordset", (_columns) => {
+      debugMSSQL("FOR JSON PATH Recordset metadata received");
+
+      try {
+        // Set headers for chunked JSON response since we know the query executed successfully.
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Cache-Control": "no-cache",
+        });
+
+        // Start JSON structure - FOR JSON PATH will provide the array content
+        res.write('{"data": ');
+        jsonStructureStarted = true;
+      } catch (headerError) {
+        debugMSSQL("Error setting up response headers: %O", headerError);
+        if (!res.headersSent) {
+          next(new DatabaseError(headerError, "streamRecords_FOR_JSON_PATH - header setup"));
+        }
+      }
+    });
+
+    /**
+     * 'row' event: Fires for each row returned by the query
+     * FOR JSON PATH returns JSON as string fragments across multiple rows
+     * Each row contains a single column with a portion of the JSON string
+     * We simply write each fragment directly - SQL Server handles the JSON formatting
+     */
+    request.on("row", (row) => {
+      try {
+        // FOR JSON PATH returns a single unnamed column containing JSON fragment
+        // The column name is typically 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B' or similar
+        const jsonFragment = Object.values(row)[0];
+        
+        if (jsonFragment) {
+          dataStarted = true;
+          res.write(jsonFragment);
+        }
+      } catch (rowError) {
+        debugMSSQL("Error processing FOR JSON PATH row: %O", rowError);
+        // FOR JSON PATH errors are more critical since fragments must be continuous
+        // Log but continue - the JSON may still be valid
+      }
+    });
+
+    /**
+     * 'error' event: Fires if query execution fails
+     * Ensures proper JSON structure cleanup regardless of when error occurs
+     */
+    request.on("error", (err) => {
+      debugMSSQL("Error streaming FOR JSON PATH records: %O", err);
+      requestCompleted = true; // Mark as completed
+      
+      if (res.headersSent) {
+        // Headers already sent, must close JSON structure gracefully
+        const errorMessage = err?.message || "Database streaming error";
+        safeEndJSON(false, errorMessage, null);
+      } else {
+        // No headers sent yet, use Express error handler
+        next(new DatabaseError(err, "streamRecords_FOR_JSON_PATH"));
+      }
+    });
+
+    /**
+     * 'done' event: Fires when all rows have been processed
+     * Safely closes the JSON structure ensuring valid JSON output
+     */
+    request.on("done", (result) => {
+      debugMSSQL("Finished streaming FOR JSON PATH records");
+      requestCompleted = true; // Mark as completed
+      
+      try {
+        // Safely close JSON structure
+        safeEndJSON(true, null, result);
+      } catch (doneError) {
+        debugMSSQL("Error in FOR JSON PATH done event: %O", doneError);
+        // Last resort: try to end the response
+        if (!res.destroyed && !res.finished) {
+          try {
+            res.end();
+          } catch (finalError) {
+            debugMSSQL("Final error ending response: %O", finalError);
+          }
+        }
+      }
+    });
+
+    // Handle client disconnect - only cancel if request is still running
+    req.on("close", () => {
+      if (requestCompleted) {
+        debugMSSQL("Client disconnected after FOR JSON PATH query completion - no action needed");
+      } else {
+        debugMSSQL("Client disconnected, canceling active FOR JSON PATH query");
+        try {
+          request.cancel();
+        } catch (cancelError) {
+          debugMSSQL(
+            "Error canceling FOR JSON PATH query on client disconnect: %O",
+            cancelError,
+          );
+        }
+      }
+    });
+
+    // Set a timeout to prevent runaway queries
+    const queryTimeout = setTimeout(() => {
+      if (requestCompleted) {
+        // Query already completed, no need to timeout
+        return;
+      }
+      
+      debugMSSQL("FOR JSON PATH Query timeout reached, canceling");
+      try {
+        request.cancel();
+        if (res.headersSent && !res.finished) {
+          safeEndJSON(false, "Query timeout", null);
+        }
+      } catch (timeoutError) {
+        debugMSSQL("Error handling FOR JSON PATH query timeout: %O", timeoutError);
+      }
+    }, 60000); // 60 second timeout
+
+    // Clear timeout when request completes
+    request.on("done", () => {
+      clearTimeout(queryTimeout);
+    });
+
+    request.on("error", () => {
+      clearTimeout(queryTimeout);
+    });
+
+    // Call query AFTER setting up event listeners
+    // Order is important: listeners must be attached before query executes
+    request.query(query);
+  } catch (error) {
+    next(new DatabaseError(error, "streamRecords_FOR_JSON_PATH"));
+  }
+};
+
 
 // Test endpoint to trigger database errors
 export const testDatabaseError = async (req, res, next) => {
