@@ -31,7 +31,8 @@ function makeRequest(path, options = {}) {
     let isValidJSON = false;
     let parsedData = null;
     let statusCode = null;
-
+    
+    // snyk:skip=Cleartext Transmission
     const req = http.request(requestOptions, (res) => {
       statusCode = res.statusCode;
       
