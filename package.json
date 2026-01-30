@@ -25,14 +25,14 @@
   "dependencies": {
     "bootstrap": "^5.3.8",
     "cookie-parser": "~1.4.7",
-    "cors": "^2.8.5",
-    "datatables.net-bs5": "^2.3.5",
+    "cors": "^2.8.6",
+    "datatables.net-bs5": "^2.3.6",
     "debug": "~4.4.3",
     "dotenv": "^17.2.3",
     "dotenv-expand": "^12.0.3",
-    "ejs": "^3.1.10",
+    "ejs": "^4.0.1",
     "express": "^5.2.1",
-    "express-session": "^1.18.2",
+    "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "http-errors": "~2.0.1",
     "morgan": "~1.10.1",
@@ -47,7 +47,7 @@
     "autocannon": "^8.0.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
-    "eslint-plugin-n": "^17.23.1",
+    "eslint-plugin-n": "^17.23.2",
     "nodemon": "^3.1.11"
   }
 }
