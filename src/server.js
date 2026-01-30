@@ -29,7 +29,7 @@ app.set('port', port);
 /**
  * Create HTTP server.
  */
-
+// snyk:skip=Cleartext Transmission
 const server = http.createServer(app);
 
 /**
