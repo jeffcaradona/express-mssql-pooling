@@ -8,7 +8,7 @@ import { configDotenv } from 'dotenv';
 configDotenv();
 
 // Node.js built-ins
-import http from 'http';
+import http from 'node:http';
 
 // Local utilities and services
 import { debugServer } from './utils/debug.js';
@@ -37,20 +37,18 @@ const server = http.createServer(app);
  * Fail-fast if DB initialization fails.
  */
 
-(async () => {
-  try {
-    await initializeDatabase();
-    debugServer("Database initialized successfully");
-    
-    // Only start listening after DB is ready
-    server.listen(port);
-  } catch (err) {
-    logger.error('Failed to initialize database:', err);
-    logger.error('Exiting due to database initialization failure');
-    // Use setImmediate to allow error to be logged before exit
-    setImmediate(() => process.exit(1));
-  }
-})();
+try {
+  await initializeDatabase();
+  debugServer("Database initialized successfully");
+  
+  // Only start listening after DB is ready
+  server.listen(port);
+} catch (err) {
+  logger.error('Failed to initialize database:', err);
+  logger.error('Exiting due to database initialization failure');
+  // Use setImmediate to allow error to be logged before exit
+  setImmediate(() => process.exit(1));
+}
 
 server.on('error', onError);
 server.on('listening', onListening);
@@ -60,9 +58,9 @@ server.on('listening', onListening);
  */
 
 function normalizePort(val) {
-  const port = parseInt(val, 10);
+  const port = Number.parseInt(val, 10);
 
-  if (isNaN(port)) {
+  if (Number.isNaN(port)) {
     // named pipe
     return val;
   }

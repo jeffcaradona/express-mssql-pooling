@@ -8,7 +8,7 @@
  * 4. Reports which requests succeeded vs failed
  */
 
-import http from 'http';
+import http from 'node:http';
 
 const SERVER_URL = 'http://localhost:1533';
 const REQUEST_INTERVAL = 500; // Make a request every 500ms

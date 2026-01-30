@@ -23,7 +23,7 @@ const getDbConfig = () => {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     server: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || "1433"),
+    port: Number.parseInt(process.env.DB_PORT || "1433"),
     database: process.env.DB_NAME,
     requestTimeout: 30000, // 30 second timeout for requests
     connectionTimeout: 15000, // 15 second timeout for initial connection
@@ -144,7 +144,7 @@ export const resetConnectionPool = async () => {
 };
 
 // Connection error codes that warrant pool reset
-const CONNECTION_ERROR_CODES = ["ESOCKET", "ECONNRESET", "ETIMEDOUT", "EHOSTUNREACH"];
+const CONNECTION_ERROR_CODES = new Set(["ESOCKET", "ECONNRESET", "ETIMEDOUT", "EHOSTUNREACH"]);
 
 /**
  * Execute a database query with automatic error handling and pool recovery
@@ -166,7 +166,7 @@ export const executeQuery = async (queryFn, operationName = "Database operation"
     });
     
     // Reset pool on connection errors
-    if (CONNECTION_ERROR_CODES.includes(err.code)) {
+    if (CONNECTION_ERROR_CODES.has(err.code)) {
       debugMSSQL("Connection error detected, resetting pool");
       await resetConnectionPool();
     }

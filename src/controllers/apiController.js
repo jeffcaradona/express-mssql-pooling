@@ -4,7 +4,7 @@ import {
   getConnectionPool,
   executeQuery,
 } from "../services/database.js";
-import { debugMSSQL } from "../utils/debug.js";
+import { debugMSSQL, debugApplication } from "../utils/debug.js";
 import { DatabaseError } from "../utils/errorHandler.js";
 import {
   safeJSONStringify,
@@ -202,7 +202,7 @@ const safeResponseEnd = (res) => {
 
 export const getInitialTest = async (_req, res, next) => {
   try {
-    debugMSSQL("Fetching records with REC_QY = 1");
+    debugApplication("Fetching records with REC_QY = 1");
     const result = await initial_test();
     debugMSSQL("Records fetched: %O", result);
 
@@ -217,16 +217,16 @@ export const getInitialTest = async (_req, res, next) => {
 
 export const getBadTest = async (_req, res, _next) => {
   try {
-    debugMSSQL("Starting bad record test");
+    debugApplication("Starting bad record test");
     await testBadRecord();
     // If no error thrown, something is wrong
-    debugMSSQL("Bad record test did not fail as expected");
+    debugApplication("Bad record test did not fail as expected");
     res.status(500).json({
       success: false,
       message: "Bad record test did not fail as expected",
     });
   } catch (error) {
-    debugMSSQL("Bad record test failed as expected: %O", error);
+    debugApplication("Bad record test failed as expected: %O", error);
     res.status(200).json({
       success: true,
       message: "Bad record test failed as expected",
@@ -236,7 +236,7 @@ export const getBadTest = async (_req, res, _next) => {
 
 export const getRecordCount = async (_req, res, next) => {
   try {
-    debugMSSQL("Fetching TestRecords count");
+    debugApplication("Fetching TestRecords count");
 
     const result = await executeQuery(async () => {
       const localPool = await getConnectionPool();
@@ -261,7 +261,7 @@ export const getRecordCount = async (_req, res, next) => {
 
 export const batchRecords = async (_req, res, next) => {
   try {
-    debugMSSQL("Starting batch TestRecords query");
+    debugApplication("Starting batch TestRecords query");
     const localPool = await getConnectionPool();
     const request = localPool.request();
     const query =
@@ -329,7 +329,7 @@ export const batchRecords = async (_req, res, next) => {
  */
 export const streamRecords = async (req, res, next) => {
   try {
-    debugMSSQL("Starting to stream TestRecords");
+    debugApplication("Starting to stream TestRecords");
     const localPool = await getConnectionPool();
 
     // STATE MANAGEMENT: Tracks JSON structure assembly across async events
@@ -499,7 +499,7 @@ export const streamRecords = async (req, res, next) => {
  */
 export const streamRecords_FOR_JSON_PATH = async (req, res, next) => {
   try {
-    debugMSSQL("Starting to stream TestRecords using FOR JSON PATH");
+    debugApplication("Starting to stream TestRecords using FOR JSON PATH");
     const localPool = await getConnectionPool();
 
     // STATE MANAGEMENT: Simplified compared to streamRecords (no row tracking)
@@ -629,7 +629,7 @@ export const streamRecords_FOR_JSON_PATH = async (req, res, next) => {
 // Test endpoint to trigger database errors
 export const testDatabaseError = async (_req, res, next) => {
   try {
-    debugMSSQL("Testing database error handling");
+    debugApplication("Testing database error handling");
 
     const result = await executeQuery(async () => {
       const localPool = await getConnectionPool();
